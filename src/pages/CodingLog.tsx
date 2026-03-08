@@ -1,10 +1,12 @@
 import { motion } from "framer-motion";
-import { CheckCircle2, Code2, BookOpen, GitCommit, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, Code2, BookOpen, GitCommit, Trash2, Share2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { AIAnalysisModal } from "@/components/AIAnalysisModal";
 
 const tagIcons: Record<string, typeof Code2> = {
   React: Code2,
@@ -20,6 +22,7 @@ const tagIcons: Record<string, typeof Code2> = {
 export default function CodingLog() {
   const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
+  const [socialModal, setSocialModal] = useState<{ open: boolean; entry: any }>({ open: false, entry: null });
 
   const { data: logs = [], isLoading } = useQuery({
     queryKey: ["coding-logs"],
@@ -45,7 +48,6 @@ export default function CodingLog() {
     }
   };
 
-  // Group by date
   const grouped = logs.reduce<Record<string, typeof logs>>((acc, log) => {
     const date = format(new Date(log.created_at), "MMMM d, yyyy");
     if (!acc[date]) acc[date] = [];
@@ -101,11 +103,20 @@ export default function CodingLog() {
                               {entry.tag && (
                                 <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">{entry.tag}</span>
                               )}
-                              {isAdmin && (
-                                <button onClick={() => handleDelete(entry.id)} className="ml-auto text-muted-foreground hover:text-destructive transition-colors">
-                                  <Trash2 className="h-3.5 w-3.5" />
+                              <div className="ml-auto flex items-center gap-1.5">
+                                <button
+                                  onClick={() => setSocialModal({ open: true, entry })}
+                                  className="text-primary hover:text-primary/80 transition-colors"
+                                  title="Generate Social Post"
+                                >
+                                  <Share2 className="h-3.5 w-3.5" />
                                 </button>
-                              )}
+                                {isAdmin && (
+                                  <button onClick={() => handleDelete(entry.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
                             {entry.description && (
                               <p className="fluid-text-xs text-muted-foreground mt-1">{entry.description}</p>
@@ -126,6 +137,15 @@ export default function CodingLog() {
           </div>
         </div>
       )}
+
+      <AIAnalysisModal
+        open={socialModal.open}
+        onClose={() => setSocialModal({ open: false, entry: null })}
+        type="social"
+        title={socialModal.entry?.title || ""}
+        description={socialModal.entry?.description}
+        code_snippet={socialModal.entry?.code_snippet}
+      />
     </div>
   );
 }
