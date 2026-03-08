@@ -1,10 +1,11 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, CheckCircle2, Circle, Trash2 } from "lucide-react";
+import { Search, CheckCircle2, Circle, Trash2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { AIAnalysisModal } from "@/components/AIAnalysisModal";
 
 const difficultyStyle: Record<string, string> = {
   Easy: "text-green-400",
@@ -17,6 +18,7 @@ export default function ProblemLibrary() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [aiModal, setAiModal] = useState<{ open: boolean; problem: any }>({ open: false, problem: null });
 
   const { data: problems = [], isLoading } = useQuery({
     queryKey: ["dsa-problems"],
@@ -104,7 +106,7 @@ export default function ProblemLibrary() {
                   <th className="text-left py-3 px-4 fluid-text-xs text-muted-foreground uppercase tracking-wider">Difficulty</th>
                   <th className="text-left py-3 px-4 fluid-text-xs text-muted-foreground uppercase tracking-wider">Category</th>
                   <th className="text-left py-3 px-4 fluid-text-xs text-muted-foreground uppercase tracking-wider">Platform</th>
-                  {isAdmin && <th className="text-left py-3 px-4 fluid-text-xs text-muted-foreground uppercase tracking-wider">Actions</th>}
+                  <th className="text-left py-3 px-4 fluid-text-xs text-muted-foreground uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -129,13 +131,22 @@ export default function ProblemLibrary() {
                       <span className="bg-secondary px-2 py-1 rounded fluid-text-xs text-secondary-foreground">{problem.category}</span>
                     </td>
                     <td className="py-3 px-4 fluid-text-xs text-muted-foreground">{problem.platform}</td>
-                    {isAdmin && (
-                      <td className="py-3 px-4">
-                        <button onClick={() => handleDelete(problem.id)} className="text-muted-foreground hover:text-destructive transition-colors">
-                          <Trash2 className="h-4 w-4" />
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setAiModal({ open: true, problem })}
+                          className="text-primary hover:text-primary/80 transition-colors"
+                          title="AI Analysis"
+                        >
+                          <Sparkles className="h-4 w-4" />
                         </button>
-                      </td>
-                    )}
+                        {isAdmin && (
+                          <button onClick={() => handleDelete(problem.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </motion.tr>
                 ))}
               </tbody>
@@ -163,6 +174,12 @@ export default function ProblemLibrary() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`fluid-text-xs font-medium ${difficultyStyle[problem.difficulty] || ""}`}>{problem.difficulty}</span>
+                    <button
+                      onClick={() => setAiModal({ open: true, problem })}
+                      className="text-primary hover:text-primary/80 transition-colors"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                    </button>
                     {isAdmin && (
                       <button onClick={() => handleDelete(problem.id)} className="text-muted-foreground hover:text-destructive transition-colors">
                         <Trash2 className="h-3.5 w-3.5" />
@@ -179,6 +196,14 @@ export default function ProblemLibrary() {
           </div>
         </>
       )}
+
+      <AIAnalysisModal
+        open={aiModal.open}
+        onClose={() => setAiModal({ open: false, problem: null })}
+        type="analyze"
+        title={aiModal.problem?.title || ""}
+        notes={aiModal.problem?.notes}
+      />
     </div>
   );
 }
