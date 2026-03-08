@@ -1,19 +1,10 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Search, CheckCircle2, Circle, Filter } from "lucide-react";
-
-const problems = [
-  { id: 1, title: "Two Sum", difficulty: "Easy", category: "Arrays", status: "solved", platform: "LeetCode" },
-  { id: 2, title: "Valid Parentheses", difficulty: "Easy", category: "Stack", status: "solved", platform: "LeetCode" },
-  { id: 3, title: "Merge Intervals", difficulty: "Medium", category: "Arrays", status: "solved", platform: "LeetCode" },
-  { id: 4, title: "LRU Cache", difficulty: "Hard", category: "Design", status: "attempted", platform: "LeetCode" },
-  { id: 5, title: "Binary Tree Level Order", difficulty: "Medium", category: "Trees", status: "solved", platform: "LeetCode" },
-  { id: 6, title: "Word Search II", difficulty: "Hard", category: "Backtracking", status: "unsolved", platform: "LeetCode" },
-  { id: 7, title: "Course Schedule", difficulty: "Medium", category: "Graphs", status: "solved", platform: "LeetCode" },
-  { id: 8, title: "Sliding Window Maximum", difficulty: "Hard", category: "Queue", status: "unsolved", platform: "LeetCode" },
-  { id: 9, title: "Number of Islands", difficulty: "Medium", category: "Graphs", status: "solved", platform: "LeetCode" },
-  { id: 10, title: "Longest Palindromic Substring", difficulty: "Medium", category: "Strings", status: "attempted", platform: "LeetCode" },
-];
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Search, CheckCircle2, Circle, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const difficultyStyle: Record<string, string> = {
   Easy: "text-green-400",
@@ -22,8 +13,22 @@ const difficultyStyle: Record<string, string> = {
 };
 
 export default function ProblemLibrary() {
+  const { isAdmin } = useAuth();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<string>("all");
+  const [filter, setFilter] = useState("all");
+
+  const { data: problems = [], isLoading } = useQuery({
+    queryKey: ["dsa-problems"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("dsa_problems")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const filtered = problems.filter((p) => {
     const matchSearch = p.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -31,6 +36,18 @@ export default function ProblemLibrary() {
     const matchFilter = filter === "all" || p.status === filter;
     return matchSearch && matchFilter;
   });
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("dsa_problems").delete().eq("id", id);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Problem deleted");
+      queryClient.invalidateQueries({ queryKey: ["dsa-problems"] });
+      queryClient.invalidateQueries({ queryKey: ["dsa-count"] });
+      queryClient.invalidateQueries({ queryKey: ["dsa-solved"] });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -71,74 +88,97 @@ export default function ProblemLibrary() {
         </div>
       </div>
 
-      {/* Mobile: cards, Desktop: table */}
-      <div className="hidden md:block overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="text-left py-3 px-4 fluid-text-xs text-muted-foreground uppercase tracking-wider">Status</th>
-              <th className="text-left py-3 px-4 fluid-text-xs text-muted-foreground uppercase tracking-wider">Title</th>
-              <th className="text-left py-3 px-4 fluid-text-xs text-muted-foreground uppercase tracking-wider">Difficulty</th>
-              <th className="text-left py-3 px-4 fluid-text-xs text-muted-foreground uppercase tracking-wider">Category</th>
-              <th className="text-left py-3 px-4 fluid-text-xs text-muted-foreground uppercase tracking-wider">Platform</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((problem, i) => (
-              <motion.tr
-                key={problem.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: i * 0.05 }}
-                className="border-b border-border hover:bg-secondary/50 transition-colors"
-              >
-                <td className="py-3 px-4">
-                  {problem.status === "solved" ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-400" />
-                  ) : (
-                    <Circle className={`h-5 w-5 ${problem.status === "attempted" ? "text-yellow-400" : "text-muted-foreground"}`} />
-                  )}
-                </td>
-                <td className="py-3 px-4 fluid-text-sm text-foreground font-medium">{problem.title}</td>
-                <td className={`py-3 px-4 fluid-text-sm font-medium ${difficultyStyle[problem.difficulty]}`}>{problem.difficulty}</td>
-                <td className="py-3 px-4">
-                  <span className="bg-secondary px-2 py-1 rounded fluid-text-xs text-secondary-foreground">{problem.category}</span>
-                </td>
-                <td className="py-3 px-4 fluid-text-xs text-muted-foreground">{problem.platform}</td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {isLoading ? (
+        <p className="fluid-text-sm text-muted-foreground">Loading...</p>
+      ) : filtered.length === 0 ? (
+        <p className="fluid-text-sm text-muted-foreground">No problems found. Add some from the Dashboard!</p>
+      ) : (
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-4 fluid-text-xs text-muted-foreground uppercase tracking-wider">Status</th>
+                  <th className="text-left py-3 px-4 fluid-text-xs text-muted-foreground uppercase tracking-wider">Title</th>
+                  <th className="text-left py-3 px-4 fluid-text-xs text-muted-foreground uppercase tracking-wider">Difficulty</th>
+                  <th className="text-left py-3 px-4 fluid-text-xs text-muted-foreground uppercase tracking-wider">Category</th>
+                  <th className="text-left py-3 px-4 fluid-text-xs text-muted-foreground uppercase tracking-wider">Platform</th>
+                  {isAdmin && <th className="text-left py-3 px-4 fluid-text-xs text-muted-foreground uppercase tracking-wider">Actions</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((problem, i) => (
+                  <motion.tr
+                    key={problem.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: i * 0.03 }}
+                    className="border-b border-border hover:bg-secondary/50 transition-colors"
+                  >
+                    <td className="py-3 px-4">
+                      {problem.status === "solved" ? (
+                        <CheckCircle2 className="h-5 w-5 text-green-400" />
+                      ) : (
+                        <Circle className={`h-5 w-5 ${problem.status === "attempted" ? "text-yellow-400" : "text-muted-foreground"}`} />
+                      )}
+                    </td>
+                    <td className="py-3 px-4 fluid-text-sm text-foreground font-medium">{problem.title}</td>
+                    <td className={`py-3 px-4 fluid-text-sm font-medium ${difficultyStyle[problem.difficulty] || ""}`}>{problem.difficulty}</td>
+                    <td className="py-3 px-4">
+                      <span className="bg-secondary px-2 py-1 rounded fluid-text-xs text-secondary-foreground">{problem.category}</span>
+                    </td>
+                    <td className="py-3 px-4 fluid-text-xs text-muted-foreground">{problem.platform}</td>
+                    {isAdmin && (
+                      <td className="py-3 px-4">
+                        <button onClick={() => handleDelete(problem.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    )}
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-      {/* Mobile cards */}
-      <div className="md:hidden space-y-3">
-        {filtered.map((problem, i) => (
-          <motion.div
-            key={problem.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="bg-card rounded-lg p-4 border-glow"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-2">
-                {problem.status === "solved" ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-400 shrink-0" />
-                ) : (
-                  <Circle className={`h-4 w-4 shrink-0 ${problem.status === "attempted" ? "text-yellow-400" : "text-muted-foreground"}`} />
-                )}
-                <h3 className="fluid-text-sm font-medium text-foreground">{problem.title}</h3>
-              </div>
-              <span className={`fluid-text-xs font-medium ${difficultyStyle[problem.difficulty]}`}>{problem.difficulty}</span>
-            </div>
-            <div className="mt-2 flex gap-2">
-              <span className="bg-secondary px-2 py-0.5 rounded fluid-text-xs text-secondary-foreground">{problem.category}</span>
-              <span className="fluid-text-xs text-muted-foreground">{problem.platform}</span>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {filtered.map((problem, i) => (
+              <motion.div
+                key={problem.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className="bg-card rounded-lg p-4 border-glow"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    {problem.status === "solved" ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-400 shrink-0" />
+                    ) : (
+                      <Circle className={`h-4 w-4 shrink-0 ${problem.status === "attempted" ? "text-yellow-400" : "text-muted-foreground"}`} />
+                    )}
+                    <h3 className="fluid-text-sm font-medium text-foreground">{problem.title}</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`fluid-text-xs font-medium ${difficultyStyle[problem.difficulty] || ""}`}>{problem.difficulty}</span>
+                    {isAdmin && (
+                      <button onClick={() => handleDelete(problem.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-2 flex gap-2">
+                  <span className="bg-secondary px-2 py-0.5 rounded fluid-text-xs text-secondary-foreground">{problem.category}</span>
+                  <span className="fluid-text-xs text-muted-foreground">{problem.platform}</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
