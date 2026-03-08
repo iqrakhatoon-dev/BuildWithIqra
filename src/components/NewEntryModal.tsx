@@ -15,6 +15,7 @@ interface NewEntryModalProps {
 
 export function NewEntryModal({ open, onClose, onSuccess, type }: NewEntryModalProps) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [codeSnippet, setCodeSnippet] = useState("");
