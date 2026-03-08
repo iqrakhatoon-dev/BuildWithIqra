@@ -52,6 +52,13 @@ export function NewEntryModal({ open, onClose, onSuccess, type }: NewEntryModalP
         if (error) throw error;
       }
       toast.success(`${type === "log" ? "Log" : "Problem"} added!`);
+      // Invalidate all related queries so stats, lists update instantly
+      queryClient.invalidateQueries({ queryKey: ["dsa-count"] });
+      queryClient.invalidateQueries({ queryKey: ["dsa-solved"] });
+      queryClient.invalidateQueries({ queryKey: ["dsa-problems"] });
+      queryClient.invalidateQueries({ queryKey: ["log-count"] });
+      queryClient.invalidateQueries({ queryKey: ["recent-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["coding-logs"] });
       onSuccess();
       onClose();
       setTitle("");
