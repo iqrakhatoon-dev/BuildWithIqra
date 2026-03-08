@@ -27,7 +27,7 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/auth" element={user ? <AppLayout><Dashboard /></AppLayout> : <AuthPage />} />
+      <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
       <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
       <Route path="/coding-log" element={<AppLayout><CodingLog /></AppLayout>} />
       <Route path="/problems" element={<AppLayout><ProblemLibrary /></AppLayout>} />
