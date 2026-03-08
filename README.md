@@ -1,73 +1,54 @@
-# Welcome to your Lovable project
+# Build With Iqra — A Full-Stack Developer Journey Hub
 
-## Project info
+A platform to track coding logs, DSA problems, and project showcases — powered by AI analysis, social media generation, and Stripe payments.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 🚀 Tech Stack
 
-## How can I edit this code?
+- **Frontend:** React, TypeScript, Tailwind CSS, shadcn/ui
+- **Backend:** Supabase (Auth, Database, Storage, Edge Functions)
+- **AI:** Anthropic Claude API (code analysis & social post generation)
+- **Payments:** Stripe (one-time tips & monthly subscriptions)
+- **Build Tool:** Vite
 
-There are several ways of editing your application.
+## ✨ Features
 
-**Use Lovable**
+- **AI-Powered Code Analysis** — Get logic explanations, complexity breakdowns, and optimization suggestions for DSA solutions via Claude.
+- **Social Media Post Generator** — Auto-generate Instagram and LinkedIn captions from your coding logs.
+- **Stripe Payment Integration** — Accept one-time tips ($5) and monthly support ($10) through Stripe Checkout.
+- **Coding Log** — Track daily learning with tags, descriptions, and code snippets.
+- **DSA Problem Library** — Organize problems by category, difficulty, and platform with status tracking.
+- **Project Showcase** — Display projects with images, descriptions, GitHub links, and live URLs.
+- **Authentication** — Secure email-based sign-up and login.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 🛠️ How to Run
 
-Changes made via Lovable will be committed automatically to this repo.
+```bash
+# 1. Clone the repository
+git clone https://github.com/<your-username>/build-with-iqra.git
 
-**Use your preferred IDE**
+# 2. Navigate to the project directory
+cd build-with-iqra
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+# 3. Install dependencies
+npm install
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 4. Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app will be available at `http://localhost:8080`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Environment Variables
 
-**Use GitHub Codespaces**
+The following environment variables are required (provided automatically via Lovable Cloud):
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+| Variable | Description |
+|---|---|
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon key |
 
-## What technologies are used for this project?
+Edge functions require `ANTHROPIC_API_KEY` and `STRIPE_SECRET_KEY` configured as backend secrets.
 
-This project is built with:
+## 📄 License
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+MIT
