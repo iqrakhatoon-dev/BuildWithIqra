@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 interface NewEntryModalProps {
@@ -14,6 +15,7 @@ interface NewEntryModalProps {
 
 export function NewEntryModal({ open, onClose, onSuccess, type }: NewEntryModalProps) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [codeSnippet, setCodeSnippet] = useState("");
@@ -50,6 +52,13 @@ export function NewEntryModal({ open, onClose, onSuccess, type }: NewEntryModalP
         if (error) throw error;
       }
       toast.success(`${type === "log" ? "Log" : "Problem"} added!`);
+      // Invalidate all related queries so stats, lists update instantly
+      queryClient.invalidateQueries({ queryKey: ["dsa-count"] });
+      queryClient.invalidateQueries({ queryKey: ["dsa-solved"] });
+      queryClient.invalidateQueries({ queryKey: ["dsa-problems"] });
+      queryClient.invalidateQueries({ queryKey: ["log-count"] });
+      queryClient.invalidateQueries({ queryKey: ["recent-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["coding-logs"] });
       onSuccess();
       onClose();
       setTitle("");
