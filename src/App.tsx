@@ -3,14 +3,39 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import CodingLog from "./pages/CodingLog";
 import ProblemLibrary from "./pages/ProblemLibrary";
 import ProjectShowcase from "./pages/ProjectShowcase";
+import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+function AppRoutes() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground fluid-text-sm">Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/auth" element={user ? <AppLayout><Dashboard /></AppLayout> : <AuthPage />} />
+      <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
+      <Route path="/coding-log" element={<AppLayout><CodingLog /></AppLayout>} />
+      <Route path="/problems" element={<AppLayout><ProblemLibrary /></AppLayout>} />
+      <Route path="/projects" element={<AppLayout><ProjectShowcase /></AppLayout>} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -18,15 +43,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AppLayout>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/coding-log" element={<CodingLog />} />
-            <Route path="/problems" element={<ProblemLibrary />} />
-            <Route path="/projects" element={<ProjectShowcase />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AppLayout>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

@@ -1,6 +1,6 @@
-import { LayoutDashboard, Clock, BookOpen, Rocket, Menu } from "lucide-react";
+import { LayoutDashboard, Clock, BookOpen, Rocket, LogIn } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Sidebar,
   SidebarContent,
@@ -23,7 +23,7 @@ const items = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const location = useLocation();
+  const { user } = useAuth();
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
@@ -60,6 +60,20 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {!user && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to="/auth"
+                      className="flex items-center gap-3 rounded-md px-3 py-2 transition-colors hover:bg-secondary"
+                      activeClassName="bg-secondary text-primary font-semibold"
+                    >
+                      <LogIn className="h-5 w-5 shrink-0" />
+                      {!collapsed && <span>Sign In</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

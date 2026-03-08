@@ -1,14 +1,13 @@
 import { motion } from "framer-motion";
-import { Code2, GitBranch, Trophy, Flame, TrendingUp, Clock } from "lucide-react";
+import { Code2, GitBranch, Trophy, Flame, TrendingUp, Clock, Plus, LogOut } from "lucide-react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { NewEntryModal } from "@/components/NewEntryModal";
+import { format } from "date-fns";
 
-const stats = [
-  { label: "Problems Solved", value: "347", icon: Code2, change: "+12 this week" },
-  { label: "Current Streak", value: "23 days", icon: Flame, change: "Personal best!" },
-  { label: "Projects Built", value: "18", icon: GitBranch, change: "+2 this month" },
-  { label: "Achievements", value: "42", icon: Trophy, change: "3 new unlocked" },
-  { label: "Hours Coded", value: "1,240", icon: Clock, change: "+28 this week" },
-  { label: "Contributions", value: "892", icon: TrendingUp, change: "+65 this month" },
-];
+const statIcons = [Code2, Flame, GitBranch, Trophy, Clock, TrendingUp];
 
 const container = {
   hidden: { opacity: 0 },
@@ -21,15 +20,81 @@ const item = {
 };
 
 export default function Dashboard() {
+  const { user, isAdmin, signOut } = useAuth();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<"log" | "problem">("log");
+
+  const { data: problemCount = 0 } = useQuery({
+    queryKey: ["dsa-count"],
+    queryFn: async () => {
+      const { count } = await supabase.from("dsa_problems").select("*", { count: "exact", head: true });
+      return count ?? 0;
+    },
+  });
+
+  const { data: solvedCount = 0 } = useQuery({
+    queryKey: ["dsa-solved"],
+    queryFn: async () => {
+      const { count } = await supabase.from("dsa_problems").select("*", { count: "exact", head: true }).eq("status", "solved");
+      return count ?? 0;
+    },
+  });
+
+  const { data: logCount = 0 } = useQuery({
+    queryKey: ["log-count"],
+    queryFn: async () => {
+      const { count } = await supabase.from("coding_logs").select("*", { count: "exact", head: true });
+      return count ?? 0;
+    },
+  });
+
+  const { data: recentLogs = [], refetch: refetchLogs } = useQuery({
+    queryKey: ["recent-logs"],
+    queryFn: async () => {
+      const { data } = await supabase.from("coding_logs").select("*").order("created_at", { ascending: false }).limit(5);
+      return data ?? [];
+    },
+  });
+
+  const stats = [
+    { label: "Problems Tracked", value: String(problemCount), icon: Code2, change: `${solvedCount} solved` },
+    { label: "Coding Logs", value: String(logCount), icon: Clock, change: "Keep going!" },
+    { label: "Solved Rate", value: problemCount > 0 ? `${Math.round((solvedCount / problemCount) * 100)}%` : "N/A", icon: Trophy, change: "of all problems" },
+  ];
+
+  const openModal = (type: "log" | "problem") => {
+    setModalType(type);
+    setModalOpen(true);
+  };
+
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="fluid-text-2xl font-bold text-foreground">
-          Welcome back, <span className="text-gradient-rosy">Iqra</span>
-        </h1>
-        <p className="fluid-text-sm text-muted-foreground mt-1">
-          Here's your development overview
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="fluid-text-2xl font-bold text-foreground">
+            Welcome back, <span className="text-gradient-rosy">Iqra</span>
+          </h1>
+          <p className="fluid-text-sm text-muted-foreground mt-1">
+            Here's your development overview
+          </p>
+        </div>
+        <div className="flex gap-2">
+          {isAdmin && (
+            <>
+              <button onClick={() => openModal("log")} className="flex items-center gap-1.5 bg-gradient-rosy text-primary-foreground px-4 py-2 rounded-lg fluid-text-xs font-semibold hover:opacity-90 transition-opacity">
+                <Plus className="h-4 w-4" /> New Log
+              </button>
+              <button onClick={() => openModal("problem")} className="flex items-center gap-1.5 bg-secondary text-secondary-foreground px-4 py-2 rounded-lg fluid-text-xs font-semibold hover:bg-muted transition-colors border-glow">
+                <Plus className="h-4 w-4" /> New Problem
+              </button>
+            </>
+          )}
+          {user && (
+            <button onClick={signOut} className="flex items-center gap-1.5 bg-secondary text-muted-foreground px-3 py-2 rounded-lg fluid-text-xs hover:text-foreground transition-colors">
+              <LogOut className="h-4 w-4" /> Sign Out
+            </button>
+          )}
+        </div>
       </div>
 
       <motion.div
@@ -47,12 +112,8 @@ export default function Dashboard() {
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="fluid-text-xs text-muted-foreground uppercase tracking-wider">
-                  {stat.label}
-                </p>
-                <p className="fluid-text-xl font-bold text-foreground mt-2">
-                  {stat.value}
-                </p>
+                <p className="fluid-text-xs text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                <p className="fluid-text-xl font-bold text-foreground mt-2">{stat.value}</p>
                 <p className="fluid-text-xs text-primary mt-1">{stat.change}</p>
               </div>
               <div className="p-2 rounded-md bg-secondary">
@@ -66,24 +127,36 @@ export default function Dashboard() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
+        transition={{ delay: 0.4 }}
         className="bg-card rounded-lg p-6 border-glow"
       >
-        <h2 className="fluid-text-lg font-semibold text-foreground mb-4">Recent Activity</h2>
-        <div className="space-y-3">
-          {[
-            { text: "Solved 'Two Sum' on LeetCode", time: "2 hours ago" },
-            { text: "Pushed 3 commits to portfolio-v2", time: "5 hours ago" },
-            { text: "Completed React Hooks module", time: "1 day ago" },
-            { text: "Started 'Build a CLI Tool' project", time: "2 days ago" },
-          ].map((activity, i) => (
-            <div key={i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-              <span className="fluid-text-sm text-foreground">{activity.text}</span>
-              <span className="fluid-text-xs text-muted-foreground whitespace-nowrap ml-4">{activity.time}</span>
-            </div>
-          ))}
-        </div>
+        <h2 className="fluid-text-lg font-semibold text-foreground mb-4">Recent Coding Logs</h2>
+        {recentLogs.length === 0 ? (
+          <p className="fluid-text-sm text-muted-foreground">No logs yet. {isAdmin ? "Add your first entry!" : "Sign in as admin to add entries."}</p>
+        ) : (
+          <div className="space-y-3">
+            {recentLogs.map((log) => (
+              <div key={log.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <div className="min-w-0 flex-1">
+                  <span className="fluid-text-sm text-foreground block truncate">{log.title}</span>
+                  {log.description && <span className="fluid-text-xs text-muted-foreground block truncate">{log.description}</span>}
+                </div>
+                <div className="flex items-center gap-2 ml-4 shrink-0">
+                  {log.tag && <span className="bg-primary/20 text-primary px-2 py-0.5 rounded fluid-text-xs">{log.tag}</span>}
+                  <span className="fluid-text-xs text-muted-foreground">{format(new Date(log.created_at), "MMM d")}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </motion.div>
+
+      <NewEntryModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSuccess={refetchLogs}
+        type={modalType}
+      />
     </div>
   );
 }
